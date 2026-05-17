@@ -37,8 +37,8 @@ function useToast() {
 const USERS = [
   
   { id: 'EMP101',  password: 'emp123',   role: 'Employee', name: 'Piyush',          label: 'Employee Environment',    icon: '💼' },
-  { id: 'EMP101',  password: 'emp234',   role: 'Employee', name: 'Surya',          label: 'Employee Environment',    icon: '💼' },
-  { id: 'EMP101',  password: 'emp345',   role: 'Employee', name: 'Ravit',          label: 'Employee Environment',    icon: '💼' },
+  { id: 'EMP102',  password: 'emp234',   role: 'Employee', name: 'Surya',          label: 'Employee Environment',    icon: '💼' },
+  { id: 'EMP103',  password: 'emp345',   role: 'Employee', name: 'Ravit',          label: 'Employee Environment',    icon: '💼' },
   { id: 'MGR555',  password: 'mgr123',   role: 'Manager',  name: 'Sarah Mitchell',  label: 'Executive L1 Dashboard',  icon: '🛡️' },
   { id: 'ADMIN01', password: 'admin123', role: 'Admin',    name: 'System Admin',    label: 'System Administrator',    icon: '⚙️' },
 ];
@@ -46,6 +46,8 @@ const USERS = [
 // Known employees for admin to assign shared goals to
 const KNOWN_EMPLOYEES = [
   { id: 'EMP101', name: 'Piyush' },
+  { id: 'EMP102', name: 'Surya' },
+  { id: 'EMP103', name: 'Ravit' },
 ];
 
 // ─── Login Screen ─────────────────────────────────────────────
