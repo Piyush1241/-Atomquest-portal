@@ -1,0 +1,15 @@
+/* 🌌 Dynamic Ambient Background Animation Keyframes */
+@keyframes ambientBlob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.15); }
+  66% { transform: translate(-30px, 30px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob-1 {
+  animation: ambientBlob 20s infinite alternate ease-in-out;
+}
+
+.animate-blob-2 {
+  animation: ambientBlob 25s infinite alternate-reverse ease-in-out;
+}
