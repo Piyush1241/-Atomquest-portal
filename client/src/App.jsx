@@ -890,7 +890,7 @@ function App() {
     setLoggedInUser(user);
     setCurrentRole(user.role);
     setIsLoggedIn(true);
-    if (user.role === 'Employee') { fetchEmployeeSheets(); fetchSharedGoalsEmployee(user.id); }
+    if (user.role === 'Employee') { fetchEmployeeSheets(user.id); fetchSharedGoalsEmployee(user.id); }
     else if (user.role === 'Manager') { fetchManagerData(); fetchSharedGoalsManager(); }
     else if (user.role === 'Admin') { fetchAdminData(); fetchSharedGoalsAdmin(); }
   };
@@ -906,9 +906,10 @@ function App() {
 
   // ── Data Fetching ──────────────────────────────────────────
 
-  const fetchEmployeeSheets = useCallback(async () => {
+  const fetchEmployeeSheets = useCallback(async (empId) => {
     try {
-      const res = await axios.get(`${API_BASE}/employee/${currentEmployeeId}`);
+      const id = empId || currentEmployeeId;
+      const res = await axios.get(`${API_BASE}/employee/${id}`);
       const approved = res.data.filter(s => s.status === 'Approved');
       setApprovedSheets(approved);
       const inputs = {};
@@ -1018,7 +1019,7 @@ function App() {
         target: g.target, weightage: Number(g.weightage) || 0
       }));
       const payload = {
-        employeeId: currentEmployeeId, employeeName: loggedInUser?.name || "Piyush",
+        employeeId: currentEmployeeId, employeeName: loggedInUser?.name || "Unknown",
         managerId: currentManagerId, goals: sanitizedGoals
       };
       const response = await axios.post(`${API_BASE}/submit`, payload);
@@ -1050,7 +1051,7 @@ function App() {
       await axios.put(`${API_BASE}/checkin/${sheetId}`, { goals: goalsPayload });
       setCheckinFeedback(prev => ({ ...prev, [sheetId]: 'success' }));
       setActiveCheckinSheet(null);
-      await fetchEmployeeSheets();
+      await fetchEmployeeSheets(currentEmployeeId);
     } catch {
       setCheckinFeedback(prev => ({ ...prev, [sheetId]: 'error' }));
     }
