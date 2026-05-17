@@ -138,14 +138,39 @@ function LoginScreen({ onLogin }) {
 }
 
 // ─── Progress Score Calculator ───────────────────────────────
+// uom can be '%', '%-max', 'Numeric', 'Numeric-max', 'Timeline', 'Zero-based'
+// -max suffix = lower actual is better (defect rate, downtime, error count etc.)
 function computeScore(uom, target, actual) {
   if (actual === null || actual === undefined || actual === '') return null;
+
+  const isMax = uom.endsWith('-max');
+  const baseUom = isMax ? uom.replace('-max', '') : uom;
+
+  // Timeline: score based on days early/late vs deadline
+  if (baseUom === 'Timeline') {
+    const targetDate = new Date(target);
+    const actualDate = new Date(actual);
+    if (isNaN(targetDate) || isNaN(actualDate)) return null;
+    const diffDays = Math.round((actualDate - targetDate) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0)  return 100;   // on time or early
+    if (diffDays <= 7)  return 80;    // up to 1 week late
+    if (diffDays <= 30) return 50;    // up to 1 month late
+    return 0;                          // more than 1 month late
+  }
+
   const t = parseFloat(target);
   const a = parseFloat(actual);
   if (isNaN(t) || isNaN(a)) return null;
-  switch (uom) {
+
+  switch (baseUom) {
     case '%':
     case 'Numeric':
+      if (isMax) {
+        // Lower is better: Target ÷ Actual (capped 100)
+        if (a === 0) return 100;
+        return Math.min(100, Math.round((t / a) * 100));
+      }
+      // Higher is better: Actual ÷ Target (capped 100)
       return Math.min(100, Math.round((a / t) * 100));
     case 'Zero-based':
       return a === 0 ? 100 : 0;
@@ -606,7 +631,7 @@ function App() {
     const sheet = pendingSheets.find(s => s._id === sheetId);
     const finalGoals = isEditing ? editingSheets[sheetId] : sheet.goals;
     try {
-      await axios.put(`${API_BASE}/review/${sheetId}`, { status: decisionStatus, goals: finalGoals });
+      await axios.put(`${API_BASE}/review/${sheetId}`, { status: decisionStatus, goals: finalGoals, actorId: loggedInUser?.id, actorName: loggedInUser?.name });
       toast(`Sheet ${decisionStatus.toLowerCase()} successfully.`, "success");
       setEditModeActive(prev => ({ ...prev, [sheetId]: false }));
       await fetchManagerData();
@@ -805,9 +830,11 @@ function App() {
                           <td className="p-3 align-top">
                             <select className="w-full px-3 py-2 border border-slate-800 rounded-lg text-sm bg-slate-950/50 text-slate-300 focus:border-indigo-500 transition-all outline-none cursor-pointer"
                               value={goal.uom} onChange={(e) => handleInputChange(idx, 'uom', e.target.value)}>
-                              <option value="%">% Percentage</option>
-                              <option value="Numeric">Integer Value</option>
-                              <option value="Timeline">Milestone/Date</option>
+                              <option value="%">% (Higher is better)</option>
+                              <option value="%-max">% (Lower is better)</option>
+                              <option value="Numeric">Numeric (Higher is better)</option>
+                              <option value="Numeric-max">Numeric (Lower is better)</option>
+                              <option value="Timeline">Timeline / Date</option>
                               <option value="Zero-based">Binary (0/1)</option>
                             </select>
                           </td>
@@ -1308,6 +1335,74 @@ function App() {
                   ))}
                 </div>
 
+                {/* ── Completion Dashboard ── */}
+                {adminSheets.length > 0 && (() => {
+                  const approved = adminSheets.filter(s => s.status === 'Approved');
+                  const checkinDone = approved.filter(s =>
+                    s.goals.every(g => g.actualAchievement !== null && g.actualAchievement !== undefined && g.actualAchievement !== '')
+                  );
+                  const checkinPending = approved.length - checkinDone.length;
+                  const managerCommentsDone = approved.filter(s =>
+                    QUARTERS.some(q => safeComments(s.checkInComments)[q])
+                  );
+                  const completionRate = approved.length > 0
+                    ? Math.round((checkinDone.length / approved.length) * 100)
+                    : 0;
+                  return (
+                    <div className="mt-5 bg-slate-950/40 border border-slate-800 rounded-xl p-5">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">📋 Completion Dashboard</p>
+                      <div className="grid grid-cols-4 gap-3 mb-4">
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-black font-mono text-indigo-400">{approved.length}</div>
+                          <div className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-1">Approved Sheets</div>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-black font-mono text-emerald-400">{checkinDone.length}</div>
+                          <div className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-1">Check-ins Complete</div>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-black font-mono text-amber-400">{checkinPending}</div>
+                          <div className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-1">Awaiting Check-in</div>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-black font-mono text-violet-400">{managerCommentsDone.length}</div>
+                          <div className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-1">Manager Comments</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-[10px] font-bold text-slate-500 w-28 flex-shrink-0">Check-in Rate</span>
+                        <div className="flex-1 bg-slate-800 rounded-full h-2">
+                          <div className="h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${completionRate}%`, backgroundColor: completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#f43f5e' }} />
+                        </div>
+                        <span className="text-[10px] font-bold font-mono text-slate-400 w-10 text-right">{completionRate}%</span>
+                      </div>
+                      {approved.length > 0 && (
+                        <div className="space-y-1.5">
+                          {approved.map(s => {
+                            const done = s.goals.filter(g => g.actualAchievement !== null && g.actualAchievement !== undefined && g.actualAchievement !== '').length;
+                            const total = s.goals.length;
+                            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                            const hasComment = QUARTERS.some(q => safeComments(s.checkInComments)[q]);
+                            return (
+                              <div key={s._id} className="flex items-center gap-3 text-[10px]">
+                                <span className="text-slate-400 font-medium w-32 truncate">{s.employeeName}</span>
+                                <div className="flex-1 bg-slate-800 rounded-full h-1.5">
+                                  <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#10b981' : pct > 0 ? '#f59e0b' : '#475569' }} />
+                                </div>
+                                <span className="font-mono text-slate-500 w-16">{done}/{total} goals</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${hasComment ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 bg-slate-800'}`}>
+                                  {hasComment ? '💬 Commented' : 'No comment'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Filter + Refresh */}
                 <div className="mt-4 flex items-center gap-3">
                   {['All', 'Pending Approval', 'Approved', 'Returned'].map(f => (
@@ -1484,6 +1579,32 @@ function App() {
                                     <span className="text-[10px] text-slate-400">{safeComments(sheet.checkInComments)[q]}</span>
                                   </div>
                                 ) : null)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Audit Trail */}
+                          {sheet.auditTrail && sheet.auditTrail.length > 0 && (
+                            <div className="px-6 pb-4 border-t border-slate-800/60 pt-3">
+                              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">🔍 Audit Trail</p>
+                              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                {[...sheet.auditTrail].reverse().map((entry, i) => {
+                                  const roleColor = entry.actorRole === 'Admin' ? 'text-rose-400'
+                                    : entry.actorRole === 'Manager' ? 'text-amber-400'
+                                    : 'text-indigo-400';
+                                  return (
+                                    <div key={i} className="flex items-start gap-3 text-[10px] bg-slate-950/40 border border-slate-800/60 rounded-lg px-3 py-2">
+                                      <span className={`font-bold flex-shrink-0 ${roleColor}`}>{entry.actorRole}</span>
+                                      <span className="text-slate-300 font-medium flex-shrink-0">{entry.actorName}</span>
+                                      <span className="text-slate-500">→</span>
+                                      <span className="text-slate-400 font-medium">{entry.action}</span>
+                                      {entry.details && <span className="text-slate-600 italic truncate">{entry.details}</span>}
+                                      <span className="ml-auto text-slate-700 flex-shrink-0 font-mono">
+                                        {new Date(entry.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
