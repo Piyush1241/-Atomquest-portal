@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-const goalRoutes = require('./routes/goalRoutes');
+const goalRoutes       = require('./routes/goalRoutes');
+const sharedGoalRoutes = require('./routes/sharedGoalRoutes');
 
 const app = express();
 
@@ -32,7 +33,8 @@ app.use((req, res, next) => {
 });
 
 // ✅ Routes
-app.use('/api/goals', goalRoutes);
+app.use('/api/goals',        goalRoutes);
+app.use('/api/shared-goals', sharedGoalRoutes);
 
 const PORT = process.env.PORT || 5000;
 
