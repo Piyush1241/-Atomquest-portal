@@ -37,8 +37,7 @@ function useToast() {
 const USERS = [
   { id: 'EMP101',  password: '9911068724',   role: 'Employee', name: 'Piyush',          label: 'Employee Environment',    icon: '💼' },
   { id: 'EMP102',  password: 'emp123',   role: 'Employee', name: 'Rakesh',          label: 'Employee Environment',    icon: '💼' },
-  { id: 'EMP101',  password: 'emp456',   role: 'Employee', name: 'Suresh',          label: 'Employee Environment',    icon: '💼' },
-  { id: 'EMP101',  password: 'emp123',   role: 'Employee', name: 'Piyush',          label: 'Employee Environment',    icon: '💼' },
+  { id: 'EMP103',  password: 'emp456',   role: 'Employee', name: 'Suresh',          label: 'Employee Environment',    icon: '💼' },
   { id: 'MGR555',  password: 'mgr123',   role: 'Manager',  name: 'Sarah Mitchell',  label: 'Executive L1 Dashboard',  icon: '🛡️' },
   { id: 'ADMIN01', password: 'admin123', role: 'Admin',    name: 'System Admin',    label: 'System Administrator',    icon: '⚙️' },
 ];
