@@ -35,6 +35,11 @@ router.post('/submit', async (req, res) => {
     });
  
     await newSheet.save();
+
+    // Audit: log submission
+    newSheet.auditTrail = [{ actorId: employeeId, actorName: employeeName, actorRole: 'Employee', action: 'Submitted', details: `${goals.length} goals submitted`, timestamp: new Date() }];
+    await newSheet.save();
+
     res.status(201).json({ message: "Goal Sheet submitted successfully!", data: newSheet });
   } catch (error) {
     console.error("❌ Submit crash:", error);
@@ -75,6 +80,15 @@ router.put('/review/:id', async (req, res) => {
       { status, goals, isLocked },
       { new: true }
     );
+
+    // Audit: log manager decision
+    const actorName = req.body.actorName || 'Manager';
+    const actorId   = req.body.actorId   || 'MGR';
+    if (!updatedSheet.auditTrail) updatedSheet.auditTrail = [];
+    updatedSheet.auditTrail.push({ actorId, actorName, actorRole: 'Manager', action: status === 'Approved' ? 'Approved' : 'Returned', details: `Sheet status set to ${status}`, timestamp: new Date() });
+    updatedSheet.markModified('auditTrail');
+    await updatedSheet.save();
+
     res.status(200).json({ message: `Goal sheet status updated to ${status}`, data: updatedSheet });
   } catch (error) {
     console.error("❌ Review crash:", error);
@@ -98,6 +112,14 @@ router.put('/checkin/:sheetId', async (req, res) => {
     });
  
     await sheet.save();
+
+    // Audit: log check-in
+    const actorName = req.body.actorName || sheet.employeeName;
+    if (!sheet.auditTrail) sheet.auditTrail = [];
+    sheet.auditTrail.push({ actorId: sheet.employeeId, actorName, actorRole: 'Employee', action: 'Check-in Updated', details: `Achievement data updated for ${goals.length} goals`, timestamp: new Date() });
+    sheet.markModified('auditTrail');
+    await sheet.save();
+
     res.status(200).json({ message: "Check-in data saved successfully.", data: sheet });
   } catch (error) {
     console.error("❌ Employee check-in crash:", error);
@@ -181,6 +203,36 @@ router.delete('/admin/delete/:sheetId', async (req, res) => {
     res.status(200).json({ message: "Goal sheet permanently deleted." });
   } catch (error) {
     console.error("❌ Admin delete crash:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 11. Add audit trail entry to a sheet
+router.post('/audit/:sheetId', async (req, res) => {
+  try {
+    const { actorId, actorName, actorRole, action, details } = req.body;
+    const sheet = await GoalSheet.findById(req.params.sheetId);
+    if (!sheet) return res.status(404).json({ message: "Sheet not found." });
+
+    if (!sheet.auditTrail) sheet.auditTrail = [];
+    sheet.auditTrail.push({ actorId, actorName, actorRole, action, details, timestamp: new Date() });
+    sheet.markModified('auditTrail');
+    await sheet.save();
+    res.status(200).json({ message: "Audit entry logged.", data: sheet.auditTrail });
+  } catch (error) {
+    console.error("❌ Audit log crash:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 12. Get audit trail for a sheet
+router.get('/audit/:sheetId', async (req, res) => {
+  try {
+    const sheet = await GoalSheet.findById(req.params.sheetId);
+    if (!sheet) return res.status(404).json({ message: "Sheet not found." });
+    res.status(200).json(sheet.auditTrail || []);
+  } catch (error) {
+    console.error("❌ Audit fetch crash:", error);
     res.status(500).json({ message: error.message });
   }
 });
