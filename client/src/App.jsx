@@ -35,7 +35,10 @@ function useToast() {
 
 // ─── User Credentials Config ─────────────────────────────────
 const USERS = [
+  
   { id: 'EMP101',  password: 'emp123',   role: 'Employee', name: 'Piyush',          label: 'Employee Environment',    icon: '💼' },
+  { id: 'EMP101',  password: 'emp234',   role: 'Employee', name: 'Surya',          label: 'Employee Environment',    icon: '💼' },
+  { id: 'EMP101',  password: 'emp345',   role: 'Employee', name: 'Ravit',          label: 'Employee Environment',    icon: '💼' },
   { id: 'MGR555',  password: 'mgr123',   role: 'Manager',  name: 'Sarah Mitchell',  label: 'Executive L1 Dashboard',  icon: '🛡️' },
   { id: 'ADMIN01', password: 'admin123', role: 'Admin',    name: 'System Admin',    label: 'System Administrator',    icon: '⚙️' },
 ];
