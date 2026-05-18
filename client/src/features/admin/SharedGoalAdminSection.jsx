@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { SG_API_BASE } from '../../config/api';
-import { KNOWN_EMPLOYEES, UOM_OPTIONS, STATUS_OPTIONS } from '../../config/constants';
+import { KNOWN_EMPLOYEES, UOM_OPTIONS } from '../../config/constants';
 import { computeScore } from '../../utils/scoring';
 import { ScoreBadge } from '../../components/ui/ScoreBadge';
 
