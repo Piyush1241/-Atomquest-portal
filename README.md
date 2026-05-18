@@ -1,59 +1,84 @@
-# ⚡ AtomQuest — Performance Tracking Engine
+# ⚛ AtomQuest — Goal Setting & Tracking Portal
 
-A full-stack employee performance management portal built with React, Node.js, Express, and MongoDB Atlas.
+> An in-house performance management portal built for **Hackathon 1.0**. Employees set goals, managers approve them, and admins push shared KPIs — all tracked through quarterly check-ins with a live scoring engine.
 
-**Live Demo → [atomquest-portal-chi.vercel.app](https://atomquest-portal-chi.vercel.app)**
+🔗 **Live Demo:** [atomquest-portal-chi.vercel.app](https://atomquest-portal-chi.vercel.app)
 
 ---
 
 ## 🚀 Features
 
-### 💼 Employee
-- Create and submit goal sheets with up to 8 KRAs (Key Result Areas)
-- Set thrust areas, UoM (%, Numeric, Binary, Timeline), targets, and weightages
-- Weightage validation — must sum to exactly 100%
-- Phase 2 quarterly check-in portal (unlocks after manager approval)
-- Log actual achievements and update goal status per quarter
-- Per-sheet analytics — weighted score, goal score bar chart, status donut chart
-- Export goal data to CSV
-- Read-only view of manager check-in feedback
+### Employee
+- Create goals with thrust area, unit of measure, targets & weightage
+- Weightage validation — total must equal 100%, min 10% per goal, max 8 goals
+- Quarterly check-in — log actual achievement vs planned target
+- Goal status tracking — Not Started / On Track / Completed
+- View and adjust weightage on admin-pushed shared goals
 
-### 🛡️ Executive L1 (Manager)
-- Review all submitted goal sheets from direct reports
-- Inline goal editing before approval
-- Approve / Return sheets with one click
-- Add quarterly check-in comments (Q1–Q4) per employee
-- Team analytics dashboard — employee score comparison, goal status breakdown
+### Manager (L1)
+- Review and approve employee goal sheets with inline editing
+- Leave comments on quarterly check-ins
+- View team analytics — bar charts, donut charts, completion rates
 
-### ⚙️ System Administrator
-- Global view of all goal sheets across the organization
-- Filter by status: All / Pending / Approved / Returned
-- Force approve or unlock any sheet
-- Delete sheets with confirmation
-- Live stat cards — total, pending, approved, returned counts
-- Export any sheet or all sheets to CSV
+### Admin / HR
+- Push shared KPIs to multiple employees at once
+- Unlock approved goals for editing
+- Force-approve or delete goal sheets
+- View full audit trail of all post-lock changes
+- Export achievement reports as CSV
+- Real-time completion dashboard
 
 ---
 
-## 🔐 Demo Credentials
+## 🧱 Tech Stack
+
+| Layer | Technology | Hosting |
+|---|---|---|
+| Frontend | React 18, Vite, Tailwind CSS | Vercel |
+| Backend | Node.js, Express.js | Render |
+| Goal Data | MongoDB Atlas (Mongoose) | MongoDB Cloud |
+| Auth Data | PostgreSQL (Neon) | Neon Serverless |
+| Auth | JWT + bcryptjs + httpOnly cookie | — |
+| HTTP Client | Axios (`withCredentials`) | — |
+| Charts | Custom SVG components | — |
+
+---
+
+## 🏗 Architecture
+
+```
+Browser (React)
+    │
+    ▼
+Vercel CDN  ──────────────────────────────────┐
+    │                                          │
+    ▼                                          │
+Express API (Render)                           │
+    ├── /api/auth       ──► PostgreSQL (Neon)  │
+    ├── /api/goals      ──► MongoDB Atlas      │
+    └── /api/shared-goals ► MongoDB Atlas      │
+         │                                     │
+         └── Audit trail (all mutations) ──────┘
+```
+
+**Request flow:**
+1. Browser loads React app from Vercel CDN
+2. `POST /api/auth/login` → bcrypt check against PostgreSQL → JWT issued as httpOnly cookie
+3. Role-based UI rendered — Employee / Manager / Admin views managed in React hooks
+4. Axios calls (`withCredentials`) hit Render → auth middleware verifies JWT → MongoDB read/write
+5. All post-lock goal mutations appended to audit trail → visible to Admin
+
+---
+
+## 🔐 Login Credentials
 
 | Role | User ID | Password |
-|------|---------|----------|
-| Employee | `EMP101` | `emp123` |
-| Manager | `MGR555` | `mgr123` |
-| Admin | `ADMIN01` | `admin123` |
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite, Tailwind CSS |
-| Backend | Node.js, Express |
-| Database | MongoDB Atlas |
-| Charts | Pure SVG (custom, no dependencies) |
-| Deployment | Vercel (frontend), Render (backend) |
+|---|---|---|
+| Employee | EMP101 | emp123 |
+| Employee | EMP102 | emp234 |
+| Employee | EMP103 | emp345 |
+| Manager (L1) | MGR555 | mgr123 |
+| Admin / HR | ADMIN01 | admin123 |
 
 ---
 
@@ -61,75 +86,124 @@ A full-stack employee performance management portal built with React, Node.js, E
 
 ```
 atomquest-portal/
-├── client/                 # React frontend
+├── client/                  # React frontend
+│   ├── public/
+│   │   └── favicon.ico
 │   ├── src/
-│   │   └── App.jsx         # Main application
-│   ├── vercel.json         # Vercel deployment config
-│   └── package.json
-├── server/                 # Express backend
-│   ├── server.js           # Entry point
-│   ├── routes/
-│   │   └── goalRoutes.js   # API routes
-│   ├── models/             # Mongoose models
-│   ├── render.yaml         # Render deployment config
-│   └── package.json
-└── README.md
+│   │   ├── components/      # Shared UI components
+│   │   ├── config/          # API base URLs (api.js)
+│   │   ├── features/
+│   │   │   ├── employee/    # GoalCreationForm, CheckInPortal, SharedGoalSection
+│   │   │   ├── manager/     # ManagerPipeline, SharedGoalManagerSection
+│   │   │   └── admin/       # AdminControlCentre
+│   │   ├── hooks/           # useEmployeeData, useManagerData, useAdminData, useToast
+│   │   └── App.jsx
+│   ├── index.html
+│   └── vite.config.js
+│
+└── server/                  # Express backend
+    ├── db/
+    │   └── postgres.js      # Neon PostgreSQL pool
+    ├── middleware/
+    │   └── auth.js          # JWT requireAuth middleware
+    ├── models/
+    │   ├── GoalSheet.js     # Mongoose schema
+    │   └── SharedGoal.js
+    ├── routes/
+    │   ├── authRoutes.js    # login, logout, /me
+    │   ├── goalRoutes.js
+    │   └── sharedGoalRoutes.js
+    └── server.js
 ```
 
 ---
 
-## 🔧 Local Setup
+## ⚙️ Local Setup
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB Atlas account (or local MongoDB)
+- MongoDB Atlas URI
+- PostgreSQL connection string (Neon or local)
 
-### Backend
+### 1. Clone the repo
+```bash
+git clone https://github.com/Piyush1241/-Atomquest-portal
+cd atomquest-portal
+```
+
+### 2. Set up the backend
 ```bash
 cd server
 npm install
-# Create .env file
-echo "PORT=5001" >> .env
-echo "MONGO_URI=your_mongodb_uri" >> .env
+```
+
+Create a `.env` file in `/server`:
+```env
+PORT=5000
+MONGO_URI=your_mongodb_atlas_uri
+DATABASE_URL=your_neon_postgres_uri
+JWT_SECRET=your_jwt_secret
+NODE_ENV=development
+```
+
+Start the server:
+```bash
 node server.js
 ```
 
-### Frontend
+### 3. Set up the frontend
 ```bash
 cd client
 npm install
-# Create .env file
-echo "VITE_API_URL=http://localhost:5001/api/goals" >> .env
 npm run dev
 ```
 
-App runs at `http://localhost:5173`
+The app will be available at `http://localhost:5173`.
 
 ---
 
 ## 🌐 Deployment
 
-| Service | URL |
-|---------|-----|
-| Frontend (Vercel) | https://atomquest-portal-chi.vercel.app |
-| Backend (Render) | https://atomquest-portal-944z.onrender.com |
+| Service | Platform | Trigger |
+|---|---|---|
+| Frontend | Vercel | Auto-deploy on push to `main` |
+| Backend | Render (Web Service) | Auto-deploy on push to `main` |
+| Goal DB | MongoDB Atlas | Cloud managed |
+| Auth DB | Neon PostgreSQL | Cloud managed |
+
+> **Note:** Render free tier spins down after 15 minutes of inactivity. A cron job pings the backend every 10 minutes to prevent cold starts.
 
 ---
 
-## 📸 Workflow
+## 📊 Scoring Engine
 
-```
-Employee submits goal sheet
-        ↓
-Manager reviews → Approves or Returns
-        ↓
-Employee logs quarterly achievements
-        ↓
-Manager adds check-in comments
-        ↓
-Admin monitors everything globally
-```
+Supports six scoring methods:
+
+| Method | Description |
+|---|---|
+| `%` | Percentage of target achieved |
+| `%-max` | Percentage capped at 100% |
+| `Numeric` | Raw numeric value |
+| `Numeric-max` | Numeric capped at maximum |
+| `Timeline` | Based on delivery date |
+| `Zero-based` | Binary — hit or miss |
 
 ---
 
-Built by **Piyush** · [GitHub](https://github.com/Piyush1241)
+## 🛡 Security
+
+- Passwords hashed with **bcryptjs**
+- Sessions managed via **JWT** stored in **httpOnly cookies** (not localStorage)
+- `SameSite=None; Secure` cookies for cross-origin Vercel ↔ Render requests
+- Role-based route protection on all API endpoints
+- Goal lock after Manager approval — edits require Admin unlock
+
+---
+
+## 📝 Submission
+
+Built for **AtomQuest Hackathon 1.0** — May 2026.
+
+---
+
+*Confidential — Hackathon Submission Only*
