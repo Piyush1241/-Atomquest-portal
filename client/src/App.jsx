@@ -3,9 +3,6 @@
 // All business logic lives in feature modules and hooks; this file is intentionally thin.
 import { useEffect, useState } from 'react';
 
-// Config
-import { KNOWN_EMPLOYEES } from './config/constants';
-
 // Hooks
 import { useToast }        from './hooks/useToast';
 import { useEmployeeData } from './hooks/useEmployeeData';
@@ -68,8 +65,6 @@ function EmployeeView({ user, toast }) {
     fetchSharedGoals();
   }, [fetchSheets, fetchSharedGoals]);
 
-  // Manager ID: first known employee in list mapped to a fixed manager for demo purposes.
-  // TODO: replace with server-side lookup once JWT auth is in place.
   const managerId = 'MGR555';
 
   return (
@@ -98,7 +93,7 @@ function EmployeeView({ user, toast }) {
 
 function ManagerView({ user, toast }) {
   const {
-    sheets, sharedGoals, editingSheets, editModeActive, loading,
+    sheets, sharedGoals, editingSheets, editModeActive,
     fetchSheets, fetchSharedGoals,
     enterEditMode, cancelEditMode, updateEditGoal, getEditTotal,
   } = useManagerData(user.id);
@@ -161,6 +156,11 @@ function AdminView({ user, toast }) {
         onForceApprove={forceApprove}
         onDelete={deleteSheet}
         onRefresh={fetchSheets}
+        sharedGoals={sharedGoals}
+        adminId={user.id}
+        adminName={user.name}
+        onSharedGoalsRefresh={fetchSharedGoals}
+        toast={toast}
       />
     </div>
   );
