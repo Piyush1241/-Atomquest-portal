@@ -1,10 +1,12 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express    = require('express');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const goalRoutes       = require('./routes/goalRoutes');
 const sharedGoalRoutes = require('./routes/sharedGoalRoutes');
+const authRoutes       = require('./routes/authRoutes');
 
 const app = express();
 
@@ -23,8 +25,9 @@ app.use(cors({
 // ✅ Handle ALL OPTIONS preflight requests globally
 app.options('/{*path}', cors());
 
-// ✅ Body parser
+// ✅ Body parser + cookie parser
 app.use(express.json());
+app.use(cookieParser());
 
 // ✅ Request logger
 app.use((req, res, next) => {
@@ -35,6 +38,7 @@ app.use((req, res, next) => {
 // ✅ Routes
 app.use('/api/goals',        goalRoutes);
 app.use('/api/shared-goals', sharedGoalRoutes);
+app.use('/api/auth',         authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
