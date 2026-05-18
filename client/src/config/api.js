@@ -4,5 +4,6 @@
 
 const BASE = 'https://atomquest-portal-944z.onrender.com';
 
-export const API_BASE    = `${BASE}/api/goals`;
-export const SG_API_BASE = `${BASE}/api/shared-goals`;
+export const API_BASE      = `${BASE}/api/goals`;
+export const SG_API_BASE   = `${BASE}/api/shared-goals`;
+export const API_AUTH_BASE = `${BASE}/api/auth`;

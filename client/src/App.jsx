@@ -2,6 +2,8 @@
 // Root orchestrator — handles auth state and routes to the correct role view.
 // All business logic lives in feature modules and hooks; this file is intentionally thin.
 import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { API_AUTH_BASE } from './config/api';
 
 // Hooks
 import { useToast }        from './hooks/useToast';
@@ -169,10 +171,34 @@ function AdminView({ user, toast }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [authChecked, setAuthChecked]   = useState(false);
   const { toasts, toast } = useToast();
 
-  const handleLogin  = (user) => setLoggedInUser(user);
-  const handleLogout = () => setLoggedInUser(null);
+  // Restore session on page refresh via httpOnly cookie
+  useEffect(() => {
+    axios.get(`${API_AUTH_BASE}/me`, { withCredentials: true })
+      .then(res => setLoggedInUser(res.data))
+      .catch(() => {}) // not logged in — stay on login screen
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  const handleLogin = (user) => setLoggedInUser(user);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API_AUTH_BASE}/logout`, {}, { withCredentials: true });
+    } catch { /* logout cookie cleared server-side; ignore network errors */ }
+    setLoggedInUser(null);
+  };
+
+  // Wait for the /me check before rendering anything — avoids login flash
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-500 text-sm font-mono animate-pulse">Initialising…</div>
+      </div>
+    );
+  }
 
   if (!loggedInUser) return <LoginScreen onLogin={handleLogin} />;
 

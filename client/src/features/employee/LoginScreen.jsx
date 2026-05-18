@@ -1,6 +1,7 @@
 // src/features/employee/LoginScreen.jsx
 import { useState } from 'react';
-import { USERS } from '../../config/constants';
+import axios from 'axios';
+import { API_AUTH_BASE } from '../../config/api';
 
 export function LoginScreen({ onLogin }) {
   const [userId,   setUserId]   = useState('');
@@ -13,14 +14,18 @@ export function LoginScreen({ onLogin }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 400));
-    const user = USERS.find(u => u.id === userId.trim() && u.password === password);
-    if (user) {
-      onLogin(user);
-    } else {
-      setError('Invalid credentials. Check your User ID and password.');
+    try {
+      const res = await axios.post(
+        `${API_AUTH_BASE}/login`,
+        { userId: userId.trim(), password },
+        { withCredentials: true }
+      );
+      onLogin(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid credentials. Check your User ID and password.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
